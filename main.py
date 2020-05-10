@@ -62,12 +62,17 @@ def make_touple(x,y):
     for i in range(len(x)):
         output.append([x[i], y[i]])
     return output
-def BDfs(key,size):
+
+
+def BDfs(key,size, setdic):
+    if key in setdic:
+        return setdic[key]
     this_set = calc_set(size,connected_graph[key])
     if len(connected_graph[key]) == 1:
         return this_set
     for i in range(1,len(connected_graph[key])):
-        this_set = calc_set(size,BDfs(hash_calc(connected_graph[key][i], size),size) ,this_set )
+        this_set = calc_set(size,BDfs(hash_calc(connected_graph[key][i], size),size, setdic) ,this_set )
+    setdic[key] = this_set
     return this_set
 
 def find_alone_node(listt):
@@ -76,30 +81,35 @@ def find_alone_node(listt):
         if i == 1:
             x+= 1
     return x
-def stroglyConnectedComponent(size):
+
+def stroglyConnectedComponent(size,n):
+    x = np.random.uniform(0,size, n)
+    y = np.random.uniform(0,size, n)
+    # node = np.stack([x,y],1)
+    node = make_touple(x,y)
+    find_tree(node,1,size)
+    BDfs_dic = {}
+    size_list = []
+    setdic = {}
+    for key,item in connected_graph.items():
+        if key in BDfs_dic:
+            continue
+        r = BDfs(key,size,setdic)
+        for items in r:
+            BDfs_dic[hash_calc(items,size)] = 1
+        size_list.append(len(r))
+        size_list.sort()
+    return size_list if len(size_list) > 0 else 0
+
+def detail_of_SCC(size):
     listt = []
     for n in range(100):
         max_size = 0
         second_max_size = 0
         min_size = 0
         for i in range(10):
-            x = np.random.uniform(0,size, n)
-            y = np.random.uniform(0,size, n)
-            # node = np.stack([x,y],1)
-            node = make_touple(x,y)
-            find_tree(node,1,size)
-            BDfs_dic = {}
-            size_list = []
-            for key,item in connected_graph.items():
-                if key in BDfs_dic:
-                    continue
-                r = BDfs(key,size)
-                for items in r:
-                    BDfs_dic[hash_calc(items,size)] = 1
-                size_list.append(len(r))
-            size_list.sort()
-            # print(size_list)
-            if len(size_list) == 0:
+            size_list = stroglyConnectedComponent(size, n)
+            if size_list == 0:
                 continue
             elif len(size_list) == 1:
                 max_size += size_list[0]
@@ -122,13 +132,39 @@ def stroglyConnectedComponent(size):
     return listt
 
 
+def float_range(st,stop,step):
+    return [x*step for x,i in enumerate(range(st,int(stop/step)))]
+def A_N_connected(a, size, n):
+    prob = []
+    for r in float_range(0,4.5, .1):
+        num = 0
+        for i in range(100):
+            size_list = stroglyConnectedComponent(size, n)
+            if len(size_list) == 0:
+                continue
+            elif size_list[-1] >= a * n:
+                num += 1
+            connected_graph.clear()
+        prob.append(num)
+        # print(r,'   ', num)
+    plt.plot(float_range(0,4.5,.1), prob)
+    plt.xlabel('distance')
+    plt.ylabel('probability')
+    plt.legend() 
+    plt.show()
 # plot_graph(x,y)
 if __name__ == "__main__":
-    situation = input('for printing graph inter1\nfor printing mid for size of connectedcomponent inter 2\n')
+    print(float_range(0,10,.5))
+    situation = input('for printing graph enter1\nfor printing mid for size of connectedcomponent enter 2\nfor an connected analysis enter 3\n')
     if situation=='1':
-        n = int(input())
-        size = int(input())
+        n = int(input('enter num of nodes:'))
+        size = int(input('enter width of space:'))
         plot_graph(size, n)
     if situation=='2':
-        size = int(input())
-        stroglyConnectedComponent(size)
+        size = int(input('enter width of space:'))
+        detail_of_SCC(size)
+    if situation == '3':
+        n = int(input('enter num of nodes:'))
+        size = float(input('enter width of space:'))
+        a = float(input('enter multiplication:'))
+        A_N_connected(a, size,n)
